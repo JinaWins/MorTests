@@ -1,0 +1,97 @@
+    private void buttonAddBuff_Click(object sender, EventArgs e)
+    {
+        string newBuff = $"{textBoxBuffID.Text}, key = vk.VK_{textBoxBuffKey.Text.ToUpper()}";
+        buffLines.Add($"{{ID={newBuff}}},");
+        listBoxBuff.DataSource = null; // Reset the binding
+        listBoxBuff.DataSource = buffLines; // Re-bind the list
+
+        // Update Lua script with newBuff
+        UpdateLuaScriptWithBuff(newBuff);
+    }
+
+   
+
+    private void UpdateLuaScriptWithBuff(string newBuff)
+    {
+        try
+        {
+            string filePath = textBoxScriptPath.Text;
+            List<string> lines = new List<string>(File.ReadAllLines(filePath));
+
+            // Find the location where Buff is defined
+            int buffStartIndex = lines.FindIndex(line => line.TrimStart().StartsWith("Buff="));
+
+            if (buffStartIndex != -1)
+            {
+                int buffEndIndex = lines.FindIndex(buffStartIndex, line => line.Contains("}"));
+
+                if (buffEndIndex != -1)
+                {
+                    // Add the new buff directly before the closing brace of the Buff section
+                    lines.Insert(buffEndIndex, $"    {{ID={newBuff}}},");
+                    File.WriteAllLines(filePath, lines.ToArray());
+
+                    MessageBox.Show("Lua file updated successfully with new buff.");
+                }
+                else
+                {
+                    MessageBox.Show("Couldn't find the closing brace '}' for Buff section in the Lua script.");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Couldn't find the 'Buff=' definition in the Lua script.");
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"An error occurred while updating Lua file: {ex.Message}");
+        }
+    }
+
+    private void RemoveBuffFromLuaScript(string selectedBuff)
+    {
+        MessageBox.Show($"Trying to remove: {selectedBuff}");
+        try
+        {
+            string filePath = textBoxScriptPath.Text;
+            List<string> lines = new List<string>(File.ReadAllLines(filePath));
+
+            // Find the location of the selectedBuff ID in the lines
+            int buffIndex = lines.FindIndex(line => line.Contains($"ID={selectedBuff}, key = vk.VK_"));
+
+            if (buffIndex != -1)
+            {
+                // Remove the selectedBuff line
+                lines.RemoveAt(buffIndex);
+
+                // Write the modified Lua script back
+                File.WriteAllLines(filePath, lines.ToArray());
+
+                // Remove the buff from the list
+                buffLines.Remove(selectedBuff);
+                listBoxBuff.DataSource = null;
+                listBoxBuff.DataSource = buffLines;
+
+                MessageBox.Show("Lua file updated successfully. Buff removed.");
+            }
+            else
+            {
+                MessageBox.Show($"Selected buff '{selectedBuff}' not found in the Lua script.");
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"An error occurred while updating Lua file: {ex.Message}");
+        }
+    }
+
+
+    private void buttonDeleteBuff_Click_1(object sender, EventArgs e)
+    {
+        if (listBoxBuff.SelectedIndex >= 0)
+        {
+            string selectedBuff = listBoxBuff.SelectedItem.ToString();
+            RemoveBuffFromLuaScript(selectedBuff);
+        }
+    }
